@@ -25,11 +25,21 @@ def load_latest_result():
     fs = HfFileSystem(token=config.HF_TOKEN)
     repo = config.HF_OUTPUT_REPO
     try:
-        files = fs.ls(f"datasets/{repo}")
-        json_files = [f for f in files if f.endswith('.json')]
+        # List files in the dataset repo
+        files_info = fs.ls(f"datasets/{repo}")
+        # Extract filenames: each entry can be a dict with 'name' or a string
+        json_files = []
+        for item in files_info:
+            if isinstance(item, dict):
+                name = item.get('name', '')
+            else:
+                name = str(item)
+            if name.endswith('.json'):
+                json_files.append(name)
         if not json_files:
             return None
-        latest = max(json_files)  # lexicographic works for YYYY-MM-DD
+        # Get the latest by filename (lexicographic works with YYYY-MM-DD)
+        latest = max(json_files)
         with fs.open(latest, "r") as f:
             data = json.load(f)
         return data
@@ -64,8 +74,7 @@ for universe_name, modes in universes.items():
             df_global = pd.DataFrame(top3)
             df_global['predicted_return'] = df_global['predicted_return'].apply(lambda x: f"{x:.6f}")
             st.dataframe(df_global, hide_index=True)
-            # Show model selection for the top pick (if available in the JSON)
-            # The JSON stores 'selected_models' per ticker under 'all_scores'
+            # Show model selection for the top pick (if available)
             all_scores = global_data.get('all_scores', [])
             if all_scores:
                 top_ticker = top3[0]['ticker']
