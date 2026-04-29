@@ -1,0 +1,28 @@
+name: Daily EMD-Hybrid Forecast
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6 AM UTC
+  workflow_dispatch:      # Manual trigger
+
+jobs:
+  run-forecast:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        pip install pandas numpy scikit-learn lightgbm EMD-signal huggingface_hub
+
+    - name: Run trainer
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      run: python trainer.py
