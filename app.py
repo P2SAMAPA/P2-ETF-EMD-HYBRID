@@ -10,7 +10,7 @@ import streamlit as st
 import pandas as pd
 import json
 from datetime import datetime
-from huggingface_hub import HfApi, HfFileSystem
+from huggingface_hub import HfFileSystem
 import config
 from us_calendar import next_trading_day
 
@@ -20,14 +20,12 @@ st.title("📈 P2-ETF-EMD-HYBRID")
 st.caption("Absolute return forecast via CEEMDAN + SVR/MLP/LightGBM")
 
 # Load latest result from HF
-@st.cache_data(ttl=3600)  # cache for 1 hour
+@st.cache_data(ttl=3600)
 def load_latest_result():
     fs = HfFileSystem(token=config.HF_TOKEN)
     repo = config.HF_OUTPUT_REPO
     try:
-        # List files in the dataset repo
         files_info = fs.ls(f"datasets/{repo}")
-        # Extract filenames: each entry can be a dict with 'name' or a string
         json_files = []
         for item in files_info:
             if isinstance(item, dict):
@@ -38,7 +36,6 @@ def load_latest_result():
                 json_files.append(name)
         if not json_files:
             return None
-        # Get the latest by filename (lexicographic works with YYYY-MM-DD)
         latest = max(json_files)
         with fs.open(latest, "r") as f:
             data = json.load(f)
@@ -64,7 +61,7 @@ universes = result['universes']
 for universe_name, modes in universes.items():
     st.header(f"🌍 {universe_name}")
     cols = st.columns(2)
-    
+
     # Global mode
     if 'global' in modes:
         global_data = modes['global']
@@ -74,7 +71,7 @@ for universe_name, modes in universes.items():
             df_global = pd.DataFrame(top3)
             df_global['predicted_return'] = df_global['predicted_return'].apply(lambda x: f"{x:.6f}")
             st.dataframe(df_global, hide_index=True)
-            # Show model selection for the top pick (if available)
+            # Show model selection for the top pick
             all_scores = global_data.get('all_scores', [])
             if all_scores:
                 top_ticker = top3[0]['ticker']
@@ -83,18 +80,23 @@ for universe_name, modes in universes.items():
                         models = item['selected_models']
                         st.caption(f"Top pick model mix: {models}")
                         break
-    
-    # Shrinking mode
+
+    # Shrinking windows mode
     if 'shrinking' in modes:
         shrink = modes['shrinking']
+        consensus = shrink['consensus_ticker']
+        total_windows = shrink['num_windows']
+        # Find how many windows voted for the consensus ticker
+        votes = sum(1 for w in shrink['windows'] if w['ticker'] == consensus)
+        percentage = (votes / total_windows) * 100
         with cols[1]:
-            st.subheader("Shrinking Windows (3‑year consensus)")
-            st.metric("Consensus pick", shrink['consensus_ticker'], f"{shrink['conviction']:.0f}% conviction")
-            st.write(f"Based on {shrink['num_windows']} windows")
+            st.subheader("Shrinking Windows")
+            st.write(f"**Most frequent ETF:** {consensus}")
+            st.write(f"**Votes:** {votes} of {total_windows} windows ({percentage:.1f}%)")
             if st.checkbox(f"Show window details for {universe_name}"):
                 windows_df = pd.DataFrame(shrink['windows'])
                 st.dataframe(windows_df)
-    
+
     st.divider()
 
 # Footer
