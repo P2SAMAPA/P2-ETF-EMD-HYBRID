@@ -35,7 +35,7 @@ class EMDHybridForecaster:
         elif self.method == 'eemd':
             decomposer = EEMD()
             imfs = decomposer.eemd(values, max_imf=self.max_imfs)
-        else:  # standard EMD
+        else:
             decomposer = EMD()
             imfs = decomposer.emd(values, max_imf=self.max_imfs)
         if imfs.shape[0] > self.max_imfs:
@@ -70,7 +70,7 @@ class EMDHybridForecaster:
         best_name = None
         best_scaler = scaler
 
-        # SVR
+        # SVR (random_state not needed, but we keep params)
         svr = SVR(**self.svr_params)
         svr.fit(X_train_scaled, y_train)
         y_pred = svr.predict(X_val_scaled)
@@ -81,8 +81,11 @@ class EMDHybridForecaster:
             best_name = 'svr'
             best_scaler = scaler
 
-        # MLP
-        mlp = MLPRegressor(**self.mlp_params, random_state=self.random_seed)
+        # MLP – ensure random_state is not duplicated
+        mlp_params = self.mlp_params.copy()
+        if 'random_state' not in mlp_params:
+            mlp_params['random_state'] = self.random_seed
+        mlp = MLPRegressor(**mlp_params)
         mlp.fit(X_train_scaled, y_train)
         y_pred = mlp.predict(X_val_scaled)
         mse = mean_squared_error(y_val, y_pred)
@@ -92,8 +95,11 @@ class EMDHybridForecaster:
             best_name = 'mlp'
             best_scaler = scaler
 
-        # LightGBM
-        lgbm = lgb.LGBMRegressor(**self.lgbm_params, random_state=self.random_seed)
+        # LightGBM – ensure random_state is not duplicated
+        lgbm_params = self.lgbm_params.copy()
+        if 'random_state' not in lgbm_params:
+            lgbm_params['random_state'] = self.random_seed
+        lgbm = lgb.LGBMRegressor(**lgbm_params)
         lgbm.fit(X_train, y_train)
         y_pred = lgbm.predict(X_val)
         mse = mean_squared_error(y_val, y_pred)
