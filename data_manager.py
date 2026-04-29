@@ -1,6 +1,6 @@
 """
 Data loading and preprocessing for EMD-Hybrid engine.
-Copied from the VAE engine – works with master_data.parquet.
+Copied from the VAE engine and extended with align_macro_returns.
 """
 
 import pandas as pd
@@ -60,3 +60,17 @@ def build_training_sequences(returns: pd.DataFrame, macro: pd.DataFrame) -> tupl
         target_list.append(returns.iloc[i + 1].values.astype(np.float32))
 
     return np.stack(cond_list), np.stack(target_list)
+
+# ------------------------------------------------------------
+# New function for EMD-Hybrid (not in VAE engine)
+# ------------------------------------------------------------
+def align_macro_returns(returns: pd.DataFrame, macro: pd.DataFrame) -> tuple:
+    """
+    Align macro data to returns index using forward fill.
+    Returns aligned macro and trimmed returns.
+    """
+    macro_aligned = macro.reindex(returns.index, method='ffill')
+    valid_mask = macro_aligned.notna().all(axis=1)
+    returns_aligned = returns[valid_mask]
+    macro_aligned = macro_aligned[valid_mask]
+    return macro_aligned, returns_aligned
