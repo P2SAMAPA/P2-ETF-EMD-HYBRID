@@ -6,3 +6,4 @@ EMD-signal>=1.4.0
 huggingface_hub>=0.20.0
 streamlit>=1.28.0
 pyarrow>=12.0.0
+PyEMD>=0.4.0
