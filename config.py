@@ -15,7 +15,7 @@ FI_COMMODITIES_TICKERS = ["TLT", "VCIT", "LQD", "HYG", "VNQ", "GLD", "SLV"]
 EQUITY_SECTORS_TICKERS = [
     "SPY", "QQQ", "XLK", "XLF", "XLE", "XLV",
     "XLI", "XLY", "XLP", "XLU", "GDX", "XME",
-    "IWF", "XSD", "XBI", "IWM"
+    "IWF", "XSD", "XBI", "IWM", "IWD"
 ]
 ALL_TICKERS = list(set(FI_COMMODITIES_TICKERS + EQUITY_SECTORS_TICKERS))
 
